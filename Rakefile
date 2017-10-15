@@ -43,6 +43,12 @@ namespace :package_manager do
     sh("carthage build --no-skip-current") rescue nil
     package_manager_failed('Carthage integration') unless $?.success?
   end
+
+  desc 'Builds the project with the Swift Package Manager'
+  task spm: :prepare do
+    sh("swift build") rescue nil
+    package_manager_failed('Swift Package Manager') unless $?.success?
+  end
 end
 
 
@@ -57,6 +63,7 @@ end
 desc 'Check the integration of PiwikTracker with package managers'
 task :build_with_package_manager do
   Rake::Task['package_manager:carthage'].invoke
+  Rake::Task['package_manager:spm'].invoke
 end
 
 task default: 'test'

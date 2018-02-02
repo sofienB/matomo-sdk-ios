@@ -161,6 +161,34 @@ static NSString * const PiwikURLCampaignKeyword = @"pk_kwd";
 }
 
 @end
+    
+    
+#pragma mark - Custom Dimension
+
+@interface CustomDimension : NSObject
+/// The index of the dimension. A dimension with this index must be setup in the piwik backend.
+@property (nonatomic) NSUInteger index;
+
+/// The value you want to set for this dimension.
+@property (nonatomic, strong) NSString *value;
+
+- (id)initWithIndex:(NSUInteger)index value:(NSString*)value;
+
+@end
+
+
+@implementation CustomDimension
+
+- (id)initWithIndex:(NSUInteger)index value:(NSString*)value {
+    self = [super init];
+    if (self) {
+        _index = index;
+        _value = value;
+    }
+    return self;
+}
+
+@end
 
 
 #pragma mark - Pwik tracker
@@ -180,6 +208,8 @@ static NSString * const PiwikURLCampaignKeyword = @"pk_kwd";
 
 @property (nonatomic, strong) NSMutableDictionary *screenCustomVariables;
 @property (nonatomic, strong) NSMutableDictionary *visitCustomVariables;
+@property (nonatomic, strong) NSMutableDictionary *visitCustomDimension;
+@property (nonatomic, strong) NSMutableDictionary *actionCustomDimension;
 @property (nonatomic, strong) NSDictionary *sessionParameters;
 @property (nonatomic, strong) NSDictionary *staticParameters;
 @property (nonatomic, strong) NSDictionary *campaignParameters;
@@ -731,6 +761,42 @@ static PiwikTracker *_sharedInstance;
 }
 
 
+- (BOOL)setCustomDimensionForIndex:(NSUInteger)index value:(NSString*)value scope:(CustomDimensionScope)scope{
+    
+    NSParameterAssert(index > 0);
+    NSParameterAssert(value);
+    
+    if (index < 1) {
+        PiwikLog(@"Custom Dimension index must be > 0");
+        return NO;
+    }
+    
+    CustomDimension *customDimension = [[CustomDimension alloc] initWithIndex:index value:value];
+    
+    if (scope == VisitCustomDimensionScope) {
+        
+        if (!self.visitCustomDimension) {
+            self.visitCustomDimension = [NSMutableDictionary dictionary];
+        }
+        self.visitCustomDimension[@(index)] = customDimension;
+        
+        // Force generation of session parameters
+        self.sessionParameters = nil;
+        
+    } else if (scope == actionCustomDimensionScope) {
+        
+        if (!self.actionCustomDimension) {
+            self.actionCustomDimension = [NSMutableDictionary dictionary];
+        }
+        self.actionCustomDimension[@(index)] = customDimension;
+        
+    }
+    else {
+        return NO;
+    }
+    
+    return YES;
+}
 - (BOOL)setCustomVariableForIndex:(NSUInteger)index name:(NSString*)name value:(NSString*)value scope:(CustomVariableScope)scope {
   
   NSParameterAssert(index > 0);
@@ -821,7 +887,18 @@ static PiwikTracker *_sharedInstance;
     joinedParameters[PiwikParameterScreenScopeCustomVariables] = [PiwikTracker JSONEncodeCustomVariables:self.screenCustomVariables];
     self.screenCustomVariables = nil;
   }
-  
+
+  // Custom Dimensions
+  NSString *keyDimensions=@"";
+  if (self.actionCustomDimension) {
+    NSDictionary *dico = [[NSDictionary alloc] initWithDictionary:self.actionCustomDimension ];
+    for (CustomDimension *dimension in [dico objectEnumerator]) {
+        keyDimensions = [NSString stringWithFormat:@"dimension%ld", [dimension index]];
+        joinedParameters[keyDimensions] = [dimension value];
+    }
+    self.actionCustomDimension = nil;
+  }
+
   // Add campaign parameters if they are set
   if (self.campaignParameters.count > 0) {
     [joinedParameters addEntriesFromDictionary:self.campaignParameters];

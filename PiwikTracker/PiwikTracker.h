@@ -40,6 +40,11 @@ typedef NS_ENUM(NSUInteger, CustomVariableScope) {
   ScreenCustomVariableScope
 };
 
+typedef NS_ENUM(NSUInteger, CustomDimensionScope) {
+  VisitCustomDimensionScope,
+  actionCustomDimensionScope
+};
+
 
 /**
  @name Creating a Piwik tracker
@@ -401,6 +406,29 @@ typedef NS_ENUM(NSUInteger, CustomVariableScope) {
  */
 - (BOOL)setCustomVariableForIndex:(NSUInteger)index name:(NSString*)name value:(NSString*)value scope:(CustomVariableScope)scope;
 
+
+/**
+ @name Custom Dimensions
+ */
+
+/**
+ Assign a custom dimension.
+ 
+ 
+ A custom dimension is a name-value pair that you can assign to your visits or individual screen views. The Piwik server will visualise how many visits, conversions, etc. occurred for each custom variable.
+ Use this method to set a dimension that will be send with every event. This is best for Custom Dimensions in scope "Visit". A typical example could be any device information or the version of the app the visitor is using.
+ You can track by default up to 5 custom dimension per action/visit and/or up to 5 custom dimension. It is possible to configure the Piwik server to accept additional number of custom dimension.
+ 
+ Keep the name and value short to ensure that the URL length doesn’t go over the URL limit for the web server or http client.
+ 
+ Please note that the iOS SDK by default will use index 1-4 to report information about statsIdentifier, You can turn this off if you prefer to use index 1-4 for your own reporting purpose.
+ 
+ @param index Custom dimension index. You should only use unique index numbers unless you want to overwrite your data.
+ @param value Custom dimension value.
+ @param scope Using action scope will associate the custom dimension with the current session.
+ @see includeDefaultCustomDimension
+ */
+- (BOOL)setCustomDimensionForIndex:(NSUInteger)index value:(NSString*)value scope:(CustomDimensionScope)scope;
 
 /**
  @name Dispatch pending events
